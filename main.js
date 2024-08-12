@@ -32,6 +32,21 @@ const earthOrbitSpeed = 0.42;
 const earthRotationSpeed = 0.15;
 const earthOrbitRotationSpeed = 0.1;
 
+const starGeometry = new THREE.SphereGeometry(0.05, 24, 24);
+const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+const starGroup = new THREE.Group();
+
+for (let i = 0; i < 100; i++) {
+    const star = new THREE.Mesh(starGeometry, starMaterial);
+    star.position.x = Math.random() * 200 - 100;
+    star.position.y = Math.random() * 200 - 100;
+    star.position.z = Math.random() * 200 - 100;
+    starGroup.add(star);
+}
+
+scene.add(starGroup);
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.25;
@@ -48,6 +63,8 @@ function animate() {
     earth.rotation.y += earthRotationSpeed;
 
     earthGroup.rotation.y += earthOrbitRotationSpeed;
+
+    starGroup.rotation.y += 0.001; 
 
     controls.update();
 

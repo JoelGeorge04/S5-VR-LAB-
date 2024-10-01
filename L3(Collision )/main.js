@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'; // Import OrbitControls
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -9,83 +8,59 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setAnimationLoop(animate);
 document.body.appendChild(renderer.domElement);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// Orbit controls
-const controls = new OrbitControls(camera, renderer.domElement); // Create OrbitControls
-controls.enableDamping = true; // Enables smooth damping (inertia)
-controls.dampingFactor = 0.05; // Damping factor
-controls.enablePan = true; // Enable panning with the mouse
-controls.enableZoom = true; // Allow zooming
-
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 1, 1);
+const light = new THREE.PointLight(0xffffff, 500, 500);
+light.position.set(0, 20, 4);
 light.castShadow = true;
 scene.add(light);
+light.shadow.mapSize.width = 1024;
+light.shadow.mapSize.height = 1024;
+light.shadow.camera.near = 2;
+light.shadow.camera.far = 2000;
 
-// Shadow properties
-light.shadow.mapSize.width = 2048; // Higher resolution shadow map
-light.shadow.mapSize.height = 2048;
-light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 500;
-light.shadow.bias = -0.0001; // Reduces shadow artifacts
-light.shadow.radius = 2; // Smooth shadows
+const cubegeometry = new THREE.BoxGeometry(10, 10, 10);
+const cubematerial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const cube = new THREE.Mesh(cubegeometry, cubematerial);
+scene.add(cube);
+cube.castShadow = true;
+cube.receiveShadow = false;
+cube.position.x = -75;
 
-// Sphere with MeshStandardMaterial for better shadow handling
-const sphereGeometry = new THREE.SphereGeometry(5, 32, 32);
-const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+const spheregeometry = new THREE.SphereGeometry(10, 10, 32);
+const spherematerial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+const sphere = new THREE.Mesh(spheregeometry, spherematerial);
 sphere.castShadow = true;
 sphere.receiveShadow = false;
 scene.add(sphere);
+sphere.position.x = 75;
 
-// Box with MeshStandardMaterial for better shadow handling
-const boxGeometry = new THREE.BoxGeometry(24, 5, 6);
-const textureBox = new THREE.TextureLoader().load('images.jpeg');
-const boxMaterial = new THREE.MeshStandardMaterial({ color: 0xff00ff });
-const box = new THREE.Mesh(boxGeometry, boxMaterial);
-box.castShadow = true;
-box.receiveShadow = false;
-scene.add(box);
-
-// Plane that receives shadows
-const planeGeometry = new THREE.PlaneGeometry(50, 50);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+const planeGeometry = new THREE.PlaneGeometry(250, 250, 320, 320);
+const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff })
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
 plane.receiveShadow = true;
-plane.rotation.x = -Math.PI / 2;
 scene.add(plane);
+plane.position.z = -2;
 
-sphere.position.x = -30;
-box.position.x = 30;
-plane.position.y = -20;
-camera.position.z = 70;
-camera.position.y = 20;
-camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-let speed = 0.1;
+camera.position.z = 60;
 
 function animate() {
-    // Sphere and box rotation
-    sphere.rotation.y += 0.01;
-    sphere.rotation.x += 0.01;
-    sphere.rotation.z += 0.01;
 
-    sphere.position.x += speed;
-    box.position.x -= speed;
+	cube.rotation.x += 0.01;
+	cube.rotation.y += 0.01;
 
-    if (sphere.position.x > 0) {
-        speed = 0;
-    }
+	sphere.rotation.x += 0.01;
+	sphere.rotation.y += 0.01;
 
-    // Update orbit controls
-    controls.update(); // This is required for damping to work
+	if (cube.position.x == sphere.position.x) {
+		cube.position.x = sphere.position.x = 0;
+	}
+	else {
+		cube.position.x += 0.5;
+		sphere.position.x -= 0.5;
+	}
 
-    renderer.render(scene, camera);
+	renderer.render(scene, camera);
+
 }
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Golf 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            color: white;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="message">You Won!</div> <!-- Hidden by default -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create the golf course (a simple plane)
+        const courseGeometry = new THREE.PlaneGeometry(10, 20);
+        const courseMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+        const course = new THREE.Mesh(courseGeometry, courseMaterial);
+        course.rotation.x = -Math.PI / 2; // Rotate to make it flat
+        scene.add(course);
+
+        // Create the golf ball (a sphere)
+        const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+        const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+        ball.position.set(0, 0.3, 0);
+        scene.add(ball);
+
+        // Create the hole (a black circle)
+        const holeGeometry = new THREE.CircleGeometry(0.5, 32);
+        const holeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const hole = new THREE.Mesh(holeGeometry, holeMaterial);
+        hole.rotation.x = -Math.PI / 2;
+        hole.position.set(0, 0.01, -8);
+        scene.add(hole);
+
+        // Set up camera position
+        camera.position.z = 15;
+        camera.position.y = 5;
+        camera.lookAt(0, 0, 0);
+
+        // Physics: Ball movement
+        let velocity = new THREE.Vector3(0, 0, 0);
+        let gameOver = false; // Track game state
+
+        function applyForce(force) {
+            if (!gameOver) {
+                velocity.add(force);
+            }
+        }
+
+        // Handle keyboard input to move the ball
+        document.addEventListener('keydown', (event) => {
+            const force = new THREE.Vector3();
+            const speed = 0.2;
+            if (event.key === 'ArrowUp') {
+                force.z = -speed; // Move forward
+            } else if (event.key === 'ArrowDown') {
+                force.z = speed; // Move backward
+            } else if (event.key === 'ArrowLeft') {
+                force.x = -speed; // Move left
+            } else if (event.key === 'ArrowRight') {
+                force.x = speed; // Move right
+            }
+            applyForce(force);
+        });
+
+        // Check if the ball falls into the hole
+        function checkHole() {
+            const distance = ball.position.distanceTo(hole.position);
+            if (distance < 0.5 && !gameOver) { // If ball is close to the hole
+                velocity.set(0, 0, 0); // Stop the ball
+                ball.position.y -= 0.05; // Simulate ball falling into the hole
+
+                if (ball.position.y <= 0) {
+                    gameOver = true;
+                    document.getElementById('message').style.display = 'block'; // Show "You Won!" message
+                }
+            }
+        }
+
+        // Update loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update ball position
+            if (!gameOver) {
+                ball.position.add(velocity);
+
+                // Simulate friction (slow down the ball over time)
+                velocity.multiplyScalar(0.98);
+
+                // Check if the ball falls into the hole
+                checkHole();
+            }
+
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

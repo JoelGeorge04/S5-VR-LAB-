@@ -19,7 +19,7 @@
     </style>
 </head>
 <body>
-    <div id="message">You Won!</div> <!-- Hidden by default -->
+    <div id="message">You Won! Level Passed</div> <!-- Hidden by default -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Initialize scene, camera, and renderer
@@ -29,37 +29,82 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create the golf course (a simple plane)
-        const courseGeometry = new THREE.PlaneGeometry(10, 20);
-        const courseMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
-        const course = new THREE.Mesh(courseGeometry, courseMaterial);
-        course.rotation.x = -Math.PI / 2; // Rotate to make it flat
-        scene.add(course);
+        // Function to create the golf course (level)
+        function createCourse() {
+            const courseGeometry = new THREE.PlaneGeometry(10, 100); // Longer course
+            const courseMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+            const course = new THREE.Mesh(courseGeometry, courseMaterial);
+            course.rotation.x = -Math.PI / 2; // Make it flat
+            scene.add(course);
+            return course;
+        }
 
-        // Create the golf ball (a sphere)
-        const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32);
-        const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-        ball.position.set(0, 0.3, 0);
-        scene.add(ball);
+        // Create visible and physical brown borders (walls)
+        function createBorders() {
+            const borderMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color for the borders
 
-        // Create the hole (a black circle)
-        const holeGeometry = new THREE.CircleGeometry(0.5, 32);
-        const holeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const hole = new THREE.Mesh(holeGeometry, holeMaterial);
-        hole.rotation.x = -Math.PI / 2;
-        hole.position.set(0, 0.01, -8);
-        scene.add(hole);
+            // Create top, bottom, left, and right borders (walls)
+            const borderHeight = 1; // Height of the border walls
+            const borderThickness = 0.5; // Thickness of the border walls
+
+            // Top Border
+            const borderTop = new THREE.Mesh(new THREE.BoxGeometry(10 + borderThickness, borderHeight, borderThickness), borderMaterial);
+            borderTop.position.set(0, borderHeight / 2, -50); // Positioned at the top
+            scene.add(borderTop);
+
+            // Bottom Border
+            const borderBottom = new THREE.Mesh(new THREE.BoxGeometry(10 + borderThickness, borderHeight, borderThickness), borderMaterial);
+            borderBottom.position.set(0, borderHeight / 2, 5); // Positioned at the bottom
+            scene.add(borderBottom);
+
+            // Left Border
+            const borderLeft = new THREE.Mesh(new THREE.BoxGeometry(borderThickness, borderHeight, 100 + borderThickness), borderMaterial);
+            borderLeft.position.set(-5.25, borderHeight / 2, -22.5); // Positioned at the left
+            scene.add(borderLeft);
+
+            // Right Border
+            const borderRight = new THREE.Mesh(new THREE.BoxGeometry(borderThickness, borderHeight, 100 + borderThickness), borderMaterial);
+            borderRight.position.set(5.25, borderHeight / 2, -22.5); // Positioned at the right
+            scene.add(borderRight);
+        }
+
+        // Function to create the ball
+        function createBall() {
+            const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+            const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            ball.position.set(0, 0.3, 0);
+            scene.add(ball);
+            return ball;
+        }
+
+        // Function to create the hole
+        function createHole() {
+            const holeGeometry = new THREE.CircleGeometry(0.5, 32);
+            const holeMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const hole = new THREE.Mesh(holeGeometry, holeMaterial);
+            hole.rotation.x = -Math.PI / 2;
+            hole.position.set(0, 0.01, -45); // Place hole farther down the pitch
+            scene.add(hole);
+            return hole;
+        }
 
         // Set up camera position
-        camera.position.z = 15;
-        camera.position.y = 5;
+        camera.position.z = 20; // Adjust camera for the longer course
+        camera.position.y = 25;
         camera.lookAt(0, 0, 0);
 
-        // Physics: Ball movement
         let velocity = new THREE.Vector3(0, 0, 0);
         let gameOver = false; // Track game state
+        let level = 1; // Track current level
 
+        // Create the initial course, ball, hole, and borders
+        const course = createCourse();
+        const ball = createBall();
+        const hole = createHole();
+        createBorders();
+
+        // Apply force to move the ball
         function applyForce(force) {
             if (!gameOver) {
                 velocity.add(force);
@@ -85,14 +130,49 @@
         // Check if the ball falls into the hole
         function checkHole() {
             const distance = ball.position.distanceTo(hole.position);
-            if (distance < 0.5 && !gameOver) { // If ball is close to the hole
+            if (distance < 0.5 && !gameOver) {
                 velocity.set(0, 0, 0); // Stop the ball
                 ball.position.y -= 0.05; // Simulate ball falling into the hole
 
                 if (ball.position.y <= 0) {
                     gameOver = true;
                     document.getElementById('message').style.display = 'block'; // Show "You Won!" message
+                    setTimeout(nextLevel, 2000); // Move to the next level after 2 seconds
                 }
+            }
+        }
+
+        // Load the next level
+        function nextLevel() {
+            level++;
+            document.getElementById('message').style.display = 'none'; // Hide message
+            gameOver = false;
+
+            // Clear current objects
+            scene.remove(ball);
+            scene.remove(course);
+            scene.remove(hole);
+
+            createBorders(); // Recreate borders for the next level
+
+            // Create new objects for the next level
+            course = createCourse();
+            ball = createBall();
+            hole = createHole();
+
+            // Adjust hole position for the next level
+            hole.position.set(0, 0.01, -45 - level * 5); // Move hole farther for each level
+
+            velocity.set(0, 0, 0); // Reset ball velocity
+        }
+
+        // Check for collisions with borders (for border physics)
+        function checkBorders() {
+            if (ball.position.x < -5 || ball.position.x > 5) {
+                velocity.x = -velocity.x; // Reflect off left/right borders
+            }
+            if (ball.position.z < -50 || ball.position.z > 5) {
+                velocity.z = -velocity.z; // Reflect off top/bottom borders
             }
         }
 
@@ -100,12 +180,15 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Update ball position
             if (!gameOver) {
+                // Update ball position
                 ball.position.add(velocity);
 
-                // Simulate friction (slow down the ball over time)
+                // Simulate friction (slow down ball over time)
                 velocity.multiplyScalar(0.98);
+
+                // Check for border collisions
+                checkBorders();
 
                 // Check if the ball falls into the hole
                 checkHole();
